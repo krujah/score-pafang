@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบบันทึกคะแนนเก็บ โรงเรียนบ้านป่าฝาง</title>
+<style>
+  :root {
+    --blue-50:#E6F1FB; --blue-100:#B5D4F4; --blue-400:#378ADD; --blue-600:#185FA5; --blue-800:#0C447C; --blue-900:#042C53;
+    --purple-50:#EEEDFE; --purple-100:#CECBF6; --purple-400:#7F77DD; --purple-600:#534AB7; --purple-800:#3C3489;
+    --teal-50:#E1F5EE; --teal-100:#9FE1CB; --teal-400:#1D9E75; --teal-600:#0F6E56; --teal-800:#085041;
+    --coral-50:#FAECE7; --coral-100:#F5C4B3; --coral-400:#D85A30; --coral-600:#993C1D;
+    --amber-50:#FAEEDA; --amber-100:#FAC775; --amber-400:#BA7517; --amber-600:#854F0B;
+    --green-50:#EAF3DE; --green-100:#C0DD97; --green-400:#639922; --green-600:#3B6D11;
+    --gray-50:#F1EFE8; --gray-100:#D3D1C7; --gray-400:#888780; --gray-600:#5F5E5A; --gray-800:#444441;
+    --red-50:#FCEBEB; --red-100:#F7C1C1; --red-400:#E24B4A; --red-600:#A32D2D;
+    --radius-md:8px; --radius-lg:12px; --radius-xl:16px;
+    --border:0.5px solid #D3D1C7;
+    --text-primary:#1a1a18; --text-secondary:#5F5E5A; --text-hint:#888780;
+    --bg-page:#F1EFE8; --bg-card:#ffffff; --bg-surface:#F8F7F3;
+    --shadow-sm:0 1px 4px rgba(0,0,0,0.08);
+    --font:'Sarabun','Noto Sans Thai',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font);font-size:16px;color:var(--text-primary);background:var(--bg-page);min-height:100vh}
+  
+  /* HEADER */
+  .header{background:var(--blue-800);color:#fff;padding:0}
+  .header-inner{max-width:960px;margin:0 auto;padding:16px 20px;display:flex;align-items:center;gap:14px}
+  .header-logo{width:48px;height:48px;background:var(--blue-600);border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+  .header-title{flex:1}
+  .header-title h1{font-size:17px;font-weight:600;line-height:1.3}
+  .header-title p{font-size:13px;opacity:0.75;margin-top:2px}
+
+  /* GAS URL CONFIG */
+  .gas-banner{background:var(--amber-50);border-bottom:1px solid var(--amber-100);padding:10px 20px;text-align:center;font-size:13px;color:var(--amber-400)}
+  .gas-banner input{margin-left:8px;padding:4px 10px;border:1px solid var(--amber-100);border-radius:var(--radius-md);font-size:13px;width:420px;max-width:60vw}
+  .gas-banner button{margin-left:6px;padding:4px 12px;background:var(--amber-400);color:#fff;border:none;border-radius:var(--radius-md);cursor:pointer;font-size:13px}
+
+  /* NAV */
+  .nav{background:var(--bg-card);border-bottom:var(--border);position:sticky;top:0;z-index:100}
+  .nav-inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;padding:0 20px}
+  .nav-btn{padding:14px 18px;font-size:14px;font-weight:500;border:none;background:none;cursor:pointer;color:var(--text-secondary);border-bottom:2px solid transparent;white-space:nowrap;transition:color 0.15s,border-color 0.15s}
+  .nav-btn:hover{color:var(--blue-600)}
+  .nav-btn.active{color:var(--blue-600);border-bottom-color:var(--blue-600)}
+
+  /* MAIN */
+  .main{max-width:960px;margin:0 auto;padding:24px 20px}
+  
+  /* PAGES */
+  .page{display:none}.page.active{display:block}
+
+  /* SECTION CARDS */
+  .card{background:var(--bg-card);border:var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;box-shadow:var(--shadow-sm)}
+  .card-title{font-size:15px;font-weight:600;color:var(--blue-800);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+  .card-title svg{flex-shrink:0}
+
+  /* GRADE BUTTONS */
+  .grade-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+  @media(max-width:600px){.grade-grid{grid-template-columns:repeat(3,1fr)}}
+  .grade-btn{padding:14px 8px;font-size:15px;font-weight:600;border:2px solid var(--blue-100);border-radius:var(--radius-lg);background:var(--blue-50);color:var(--blue-800);cursor:pointer;text-align:center;transition:all 0.15s}
+  .grade-btn:hover,.grade-btn.active{background:var(--blue-600);color:#fff;border-color:var(--blue-600)}
+
+  /* SUBJECT LIST */
+  .subject-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+  .subj-btn{padding:10px 14px;font-size:14px;border:var(--border);border-radius:var(--radius-md);background:var(--bg-surface);color:var(--text-primary);cursor:pointer;text-align:left;transition:all 0.15s;display:flex;align-items:center;gap:8px}
+  .subj-btn:hover,.subj-btn.active{background:var(--purple-50);border-color:var(--purple-100);color:var(--purple-800)}
+  .subj-dot{width:8px;height:8px;border-radius:50%;background:var(--gray-100);flex-shrink:0}
+  .subj-btn.has-data .subj-dot{background:var(--teal-400)}
+
+  /* BREADCRUMB */
+  .breadcrumb{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-secondary);margin-bottom:16px;flex-wrap:wrap}
+  .breadcrumb-link{color:var(--blue-600);cursor:pointer;text-decoration:underline}
+  .breadcrumb span{color:var(--gray-400)}
+
+  /* TASK MANAGEMENT */
+  .task-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;background:var(--bg-surface);border:var(--border);border-radius:var(--radius-md);padding:8px 12px}
+  .task-row input{border:var(--border);border-radius:var(--radius-md);padding:6px 10px;font-size:14px;font-family:var(--font)}
+  .task-row input.task-name{flex:1;min-width:0}
+  .task-row input.task-max{width:80px}
+  .btn{padding:8px 16px;border-radius:var(--radius-md);border:none;cursor:pointer;font-size:14px;font-family:var(--font);font-weight:500;transition:all 0.15s}
+  .btn-primary{background:var(--blue-600);color:#fff}.btn-primary:hover{background:var(--blue-800)}
+  .btn-success{background:var(--teal-400);color:#fff}.btn-success:hover{background:var(--teal-600)}
+  .btn-danger{background:var(--red-50);color:var(--red-600);border:1px solid var(--red-100)}.btn-danger:hover{background:var(--red-100)}
+  .btn-ghost{background:transparent;color:var(--text-secondary);border:var(--border)}.btn-ghost:hover{background:var(--bg-surface)}
+  .btn-sm{padding:5px 10px;font-size:13px}
+
+  /* SCORE TABLE */
+  .score-table-wrap{overflow-x:auto;border:var(--border);border-radius:var(--radius-lg)}
+  .score-table{width:100%;border-collapse:collapse;font-size:14px;min-width:500px}
+  .score-table th{background:var(--blue-800);color:#fff;padding:10px 8px;text-align:center;font-weight:500;white-space:nowrap;position:sticky;top:0}
+  .score-table th.left{text-align:left}
+  .score-table td{padding:8px 8px;border-bottom:var(--border);vertical-align:middle}
+  .score-table tr:last-child td{border-bottom:none}
+  .score-table tr:hover td{background:var(--blue-50)}
+  .score-table td.center{text-align:center}
+  .score-table td.num{text-align:right;font-variant-numeric:tabular-nums}
+  .score-input{width:70px;padding:4px 6px;border:var(--border);border-radius:var(--radius-md);font-size:14px;font-family:var(--font);text-align:center}
+  .score-input:focus{outline:2px solid var(--blue-400);border-color:transparent}
+  .score-total{font-weight:600;color:var(--blue-800)}
+  .score-pct{font-size:12px;color:var(--text-hint)}
+
+  /* SUMMARY CARDS */
+  .summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+  .summary-card{background:var(--bg-card);border:var(--border);border-radius:var(--radius-lg);padding:14px;box-shadow:var(--shadow-sm)}
+  .summary-card-subj{font-size:13px;color:var(--text-secondary);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .summary-card-avg{font-size:24px;font-weight:600;color:var(--blue-800);line-height:1}
+  .summary-card-detail{font-size:12px;color:var(--text-hint);margin-top:4px}
+  .summary-card.no-data .summary-card-avg{font-size:16px;color:var(--gray-400)}
+  .summary-card .pct-bar{height:4px;background:var(--gray-100);border-radius:99px;margin-top:8px;overflow:hidden}
+  .summary-card .pct-fill{height:100%;background:var(--teal-400);border-radius:99px;transition:width 0.5s}
+
+  /* STUDENTS PAGE */
+  .student-table{width:100%;border-collapse:collapse;font-size:14px}
+  .student-table th{background:var(--gray-50);padding:8px 12px;text-align:left;font-weight:600;border-bottom:1px solid var(--gray-100)}
+  .student-table td{padding:8px 12px;border-bottom:var(--border)}
+  .student-table td input{width:100%;border:var(--border);border-radius:var(--radius-md);padding:5px 8px;font-size:14px;font-family:var(--font)}
+
+  /* STATUS BADGE */
+  .badge{display:inline-block;padding:3px 8px;border-radius:99px;font-size:12px;font-weight:500}
+  .badge-success{background:var(--teal-50);color:var(--teal-600)}
+  .badge-warn{background:var(--amber-50);color:var(--amber-400)}
+  .badge-gray{background:var(--gray-50);color:var(--gray-600)}
+
+  /* TOAST */
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--blue-900);color:#fff;padding:12px 24px;border-radius:var(--radius-lg);font-size:14px;z-index:9999;transition:transform 0.3s;pointer-events:none}
+  #toast.show{transform:translateX(-50%) translateY(0)}
+  #toast.success{background:var(--teal-600)}
+  #toast.error{background:var(--red-600)}
+
+  /* SPINNER */
+  .spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--blue-100);border-top-color:var(--blue-600);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* EMPTY STATE */
+  .empty{text-align:center;padding:48px 20px;color:var(--text-hint)}
+  .empty-icon{font-size:48px;margin-bottom:12px}
+  .empty p{font-size:15px}
+
+  /* PRINT */
+  @media print {
+    .header,.nav,.gas-banner,.no-print{display:none!important}
+    .main{padding:0}
+    .score-table th{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+
+  .flex{display:flex}.items-center{align-items:center}.gap-8{gap:8px}.gap-12{gap:12px}.mb-12{margin-bottom:12px}.mb-16{margin-bottom:16px}.mt-12{margin-top:12px}
+  .ml-auto{margin-left:auto}.text-sm{font-size:13px}.text-hint{color:var(--text-hint)}
+  select{padding:6px 10px;border:var(--border);border-radius:var(--radius-md);font-size:14px;font-family:var(--font);background:var(--bg-card)}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-inner">
+    <div class="header-logo">📊</div>
+    <div class="header-title">
+      <h1>ระบบบันทึกคะแนนเก็บ</h1>
+      <p>โรงเรียนบ้านป่าฝาง &nbsp;|&nbsp; สพป.สตูล</p>
+    </div>
+  </div>
+</div>
+
+<!-- GAS URL SETUP -->
+<div class="gas-banner" id="gasBanner" style="display:none">
+  🔗 กรุณาตั้งค่า URL ของ Google Apps Script:
+  <input type="text" id="gasUrlInput" placeholder="https://script.google.com/macros/s/xxxx/exec">
+  <button onclick="saveGasUrl()">บันทึก</button>
+  <span id="gasStatus" style="margin-left:8px"></span>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <div class="nav-inner">
+    <button class="nav-btn active" onclick="showPage('score')">📝 บันทึกคะแนน</button>
+    <button class="nav-btn" onclick="showPage('summary')">📊 สรุปคะแนน</button>
+    <button class="nav-btn" onclick="showPage('students')">👥 รายชื่อนักเรียน</button>
+    <button class="nav-btn" onclick="showPage('export')">🖨️ พิมพ์รายงาน</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- ========= PAGE: SCORE ========= -->
+  <div id="page-score" class="page active">
+
+    <!-- Step 1: Select Grade -->
+    <div class="card" id="step-grade">
+      <div class="card-title">เลือกชั้นเรียน</div>
+      <div class="grade-grid" id="gradeButtons"></div>
+    </div>
+
+    <!-- Step 2: Select Subject -->
+    <div class="card" id="step-subject" style="display:none">
+      <div class="breadcrumb" id="breadcrumb-subject"></div>
+      <div class="card-title">เลือกวิชา</div>
+      <div class="subject-grid" id="subjectButtons"></div>
+    </div>
+
+    <!-- Step 3: Manage Tasks -->
+    <div class="card" id="step-tasks" style="display:none">
+      <div class="breadcrumb" id="breadcrumb-tasks"></div>
+      <div class="card-title">จัดการงาน/ชิ้นงาน</div>
+      <div id="taskList"></div>
+      <div class="flex gap-8 mt-12">
+        <button class="btn btn-ghost btn-sm" onclick="addTaskRow()">+ เพิ่มชิ้นงาน</button>
+        <button class="btn btn-primary btn-sm ml-auto" onclick="saveTasksAndGoScore()">บันทึกและกรอกคะแนน →</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Enter Scores -->
+    <div class="card" id="step-scores" style="display:none">
+      <div class="breadcrumb" id="breadcrumb-scores"></div>
+      <div class="card-title flex items-center gap-8">
+        <span>กรอกคะแนน</span>
+        <span class="badge badge-gray text-sm" id="scoreCount"></span>
+        <button class="btn btn-ghost btn-sm ml-auto no-print" onclick="backToTasks()">← แก้ไขชิ้นงาน</button>
+        <button class="btn btn-success btn-sm no-print" onclick="saveAllScores()">💾 บันทึกทั้งหมด</button>
+      </div>
+      <div class="score-table-wrap" id="scoreTableWrap"></div>
+    </div>
+
+  </div>
+
+  <!-- ========= PAGE: SUMMARY ========= -->
+  <div id="page-summary" class="page">
+    <div class="card">
+      <div class="card-title">สรุปคะแนนรายห้อง</div>
+      <div class="flex gap-8 mb-16">
+        <select id="summaryGrade" onchange="loadSummary()">
+          <option value="">-- เลือกชั้น --</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="loadSummary()">🔄 โหลดข้อมูล</button>
+      </div>
+      <div id="summaryContent">
+        <div class="empty"><div class="empty-icon">📊</div><p>เลือกชั้นเรียนเพื่อดูสรุปคะแนน</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========= PAGE: STUDENTS ========= -->
+  <div id="page-students" class="page">
+    <div class="card">
+      <div class="card-title">จัดการรายชื่อนักเรียน</div>
+      <div class="flex gap-8 mb-16">
+        <select id="studentGrade" onchange="loadStudents()">
+          <option value="">-- เลือกชั้น --</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="addStudentRow()">+ เพิ่มนักเรียน</button>
+        <button class="btn btn-success btn-sm ml-auto" onclick="saveStudents()">💾 บันทึกรายชื่อ</button>
+      </div>
+      <div id="studentTableWrap">
+        <div class="empty"><div class="empty-icon">👥</div><p>เลือกชั้นเรียนเพื่อดูรายชื่อ</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========= PAGE: EXPORT ========= -->
+  <div id="page-export" class="page">
+    <div class="card">
+      <div class="card-title">พิมพ์รายงานคะแนน</div>
+      <div class="flex gap-8 mb-16 flex-wrap">
+        <select id="exportGrade" onchange="loadExportSubjects()">
+          <option value="">-- เลือกชั้น --</option>
+        </select>
+        <select id="exportSubject">
+          <option value="">-- เลือกวิชา --</option>
+        </select>
+        <button class="btn btn-primary" onclick="loadExportData()">📋 ดูรายงาน</button>
+        <button class="btn btn-ghost" onclick="window.print()">🖨️ พิมพ์</button>
+      </div>
+      <div id="exportContent">
+        <div class="empty"><div class="empty-icon">🖨️</div><p>เลือกชั้นและวิชาเพื่อดูรายงาน</p></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ============================================================
+// STUDENT DATABASE (จากไฟล์ รายชื่อนักเรียน_2569.xlsx)
+// ป.1–ป.6 รวม 100 คน โรงเรียนบ้านป่าฝาง ปีการศึกษา 2569
+// ============================================================
+const STUDENT_DB = {"ป.1": [[1, "3197", "เด็กชายชนะชล ขุนดำ"], [2, "3211", "ด.ช.ธนภัทร หมาดกาสา"], [3, "3212", "ด.ช.มูฮัมหมัดฮาริส ดือราแม"], [4, "3213", "ด.ญ.ญุรญานี คงห้วย"], [5, "3214", "ด.ญ.วริทยา สันหลี"], [6, "3215", "ด.ญ.ฮนาเซีย ขาวเชาะ"], [7, "3216", "ด.ญ.วิรัญชนา จันทร์ขวัญ"], [8, "", "ด.ญ.ซาบีนา จิ้วจวบ"]], "ป.2": [[1, "3182", "เด็กชายชนภัทร ขุนดำ"], [2, "3189", "เด็กชายฟาคิน หลงข่าว"], [3, "3190", "เด็กชายมุซิน สุหลง"], [4, "3193", "เด็กชายอนิวัตติ์ โสสนุ้ย"], [5, "3196", "เด็กชายอัดสรอน หวังสบู"], [6, "3198", "เด็กชายอัรดูฆอน สันหมาด"], [7, "3219", "เด็กชายชลนัท ไชยรักษ์"], [8, "3235", "ด.ช.กฤษฎาลัน สะหยัง"], [9, "3199", "เด็กหญิงณัฐณิชา หมาดหนุด"], [10, "3200", "เด็กหญิงนลินญา ชนะมิตร"], [11, "3201", "เด็กหญิงฐานิกา ยาเหล"], [12, "3203", "เด็กหญิงอัยลดา กัลยา"], [13, "3204", "เด็กหญิงรียา ดาแม"], [14, "3229", "ด.ญ.อลินดา มุนลิหมีน"], [15, "3251", "ด.ช.สรวิชญ์ ลิ่มหลัก"]], "ป.3": [[1, "3161", "เด็กชายซันฝุดดีน หัวแท้"], [2, "3162", "เด็กชายณัฐพงศ์ ชำนาญนา"], [3, "3163", "เด็กชายดุรรีย์ เขียวจักกาด"], [4, "3164", "เด็กชายธนพนธ์ หมีนสัน"], [5, "3166", "ด.ช.มูฮัมหมัดฮิรฟาน สาเหล็ม"], [6, "3169", "เด็กชายอาเดล สันหลี"], [7, "3170", "เด็กชายอิบรอน ดำท่าคลอง"], [8, "3187", "เด็กชายธนายุทธ องสารา"], [9, "3171", "เด็กหญิงซัลฟาเซีย เตี้ยเล็ก"], [10, "3172", "เด็กหญิงนูรนาเดียร์ แอหลัง"], [11, "3173", "เด็กหญิงธัญชนก พรมรักษ์"], [12, "3174", "เด็กหญิงวรกานต์ เด็นหรน"], [13, "3175", "เด็กหญิงอริญรดา หวันสมัน"], [14, "3185", "เด็กหญิงเมธาวี คงห้วย"], [15, "3232", "เด็กหญิงอัสมีน่า จิตต์หลัง"]], "ป.4": [[1, "3107", "เด็กชายริฟฟาฮ์ ชินประพันธ์"], [2, "3138", "เด็กชายชัยพฤกษ์ ลาเต๊ะ"], [3, "3140", "เด็กชายฐีรวัฒน์ จันทร์เพ็ญ"], [4, "3141", "เด็กชายนนทพัทธ์ อังฮะ"], [5, "3142", "เด็กชายนรภัทร โสะนุ้ย"], [6, "3143", "เด็กชายปองกานต์ ทองศรีเกตุ"], [7, "3145", "เด็กชายวัชริศ อ่อนหวาน"], [8, "3146", "เด็กชายอัครพล นุ้ยไฉน"], [9, "3148", "เด็กชายอนิรุทธ์ โพธิ์ทอง"], [10, "3184", "เด็กชายพีรวิทย์ พรมนุ่น"], [11, "3205", "เด็กชายยุสรีย์ หวังสบู"], [12, "3117", "เด็กหญิงซัซวานี เหมรา"], [13, "3123", "เด็กหญิงนูฮา นกดา"], [14, "3151", "เด็กหญิงนูรนาซาฮ์ หนูวงค์"], [15, "3152", "เด็กหญิงนูรนาเซีย หนูวงค์"], [16, "3153", "เด็กหญิงพิชญาดา สะหยัง"], [17, "3154", "เด็กหญิงลินลนีย์ จันทร์ทิพย์"], [18, "3155", "เด็กหญิงอามีร่า คลังข้อง"], [19, "3220", "เด็กหญิงกัญญาวีร์ ลักษณา"]], "ป.5": [[1, "3108", "เด็กชายริฟฟาฮ์ หมานดำ"], [2, "3109", "เด็กชายจิตรกร ชำนาญเพาะ"], [3, "3110", "เด็กชายมูฮัมหมัดชาฟิค เหลือแดง"], [4, "3111", "เด็กชายอนุวรรตน์ ยาวาระยะ"], [5, "3112", "เด็กชายธนาธิป อาละหมาด"], [6, "3114", "เด็กชายหะดิษ หวาสกุล"], [7, "3115", "เด็กชายอัคพันธ์ สันหลี"], [8, "3116", "เด็กหญิงฮัซวานี นกดา"], [9, "3120", "เด็กหญิงอัญชนา โต๊ะล๊ะ"], [10, "3121", "เด็กหญิงฮานานีน จันทร์เพ็ญ"], [11, "3124", "เด็กหญิงจันทกานต์ หวันโส๊ะ"], [12, "3125", "เด็กหญิงสุนิดา หวันสู"], [13, "3126", "เด็กหญิงนันทิชา ดังเด็น"], [14, "3132", "เด็กหญิงเจวลินย์ อาดสะอาด"], [15, "3159", "เด็กหญิงลัลล์ลลิลล์ เจริญวัย"], [16, "3177", "เด็กหญิงชญานิศ เห็มนะ"], [17, "3178", "เด็กหญิงนูรีน ขุนยะระ"], [18, "", "ด.ญ.พิชามญธุ์ พูลขาว"]], "ป.6": [[1, "3027", "เด็กชายพงศกร รูปคม"], [2, "3079", "เด็กชายธันวา ไฉนวงษ์"], [3, "3080", "เด็กชายนันทวัฒน์ กุจะพันธ์"], [4, "3081", "เด็กชายนิวัฒน์ สันหลี"], [5, "3082", "เด็กชายบาซิล เส็มสแอ"], [6, "3102", "เด็กชายมานพ บนหลี"], [7, "3157", "เด็กชายพิชญุตม์ นิลสกุล"], [8, "3179", "เด็กชายณัฐชนนท์ บุญเสน"], [9, "3180", "เด็กชายภูมิรพี โสะนุ้ย"], [10, "3210", "เด็กชายธันวรินทร์ เวชสิทธิ์"], [11, "3234", "เด็กชายพิชญะ นิตยวัน"], [12, "3084", "เด็กหญิงจารุมน หมาดอี"], [13, "3085", "เด็กหญิงจิรภิญญา หวันตาหลา"], [14, "3086", "เด็กหญิงณัฐยวา หมัดหลง"], [15, "3087", "เด็กหญิงณิชนันท์ สุวามีน"], [16, "3088", "เด็กหญิงนริศรา สมสู"], [17, "3089", "เด็กหญิงปนัดดา ส่งข่าว"], [18, "3091", "เด็กหญิงรณิดา ดาษดา"], [19, "3092", "เด็กหญิงวาอาดา สันหลี"], [20, "3093", "เด็กหญิงสุไรญา โพธิ์ทอง"], [21, "3095", "เด็กหญิงอัซวานี ยาบา"], [22, "3096", "เด็กหญิงฟิรฮานา เร๊ะนุ้ย"], [23, "3100", "เด็กหญิงปิยนุช เฉียหม่อง"], [24, "3209", "เด็กหญิงธัญญรัตน์ โต๊ะล๊ะ"], [25, "3252", "ด.ช.ภทรธร ลิ่มหลัก"]]};
+
+// ============================================================
+// CONFIG & STATE
+// ============================================================
+const SUBJECTS = [
+  "ภาษาไทย","คณิตศาสตร์","วิทยาศาสตร์และเทคโนโลยี",
+  "สังคมศึกษาฯ","ประวัติศาสตร์","สุขศึกษาและพลศึกษา",
+  "ศิลปะ","การงานอีชีพ","ภาษาอังกฤษ",
+  "วิทยาการคำนวณ","ภาษาอังกฤษเพิ่มเติม"
+];
+const GRADES = ["ป.1","ป.2","ป.3","ป.4","ป.5","ป.6"];
+
+let GAS_URL = localStorage.getItem("gas_url") || "https://script.google.com/macros/s/AKfycbxM48SYQkccJAdwkDrzdM-3OXXq9PLNVgkSafYGCwCa55K8LaLlEaWs19KribsWZpbcwg/exec";
+let state = { grade: "", subject: "", tasks: [], students: [], scores: {}, sheetData: {} };
+
+// ============================================================
+// GAS URL
+// ============================================================
+function saveGasUrl() {
+  const url = document.getElementById("gasUrlInput").value.trim();
+  if (!url) { toast("กรุณากรอก URL ของ Apps Script", "error"); return; }
+  GAS_URL = url;
+  localStorage.setItem("gas_url", url);
+  document.getElementById("gasStatus").textContent = "✅ บันทึกแล้ว";
+  document.getElementById("gasBanner").style.background = "#EAF3DE";
+  toast("บันทึก URL สำเร็จ", "success");
+}
+
+function gasCall(action, params) {
+  if (!GAS_URL) { toast("กรุณาตั้งค่า URL ของ Apps Script ก่อน", "error"); return Promise.reject("no url"); }
+  const url = new URL(GAS_URL);
+  url.searchParams.set("action", action);
+  Object.entries(params || {}).forEach(([k,v]) => url.searchParams.set(k, typeof v === "object" ? JSON.stringify(v) : v));
+  return fetch(url.toString())
+    .then(r => r.json())
+    .catch(err => { toast("เชื่อมต่อ Apps Script ไม่ได้: " + err, "error"); throw err; });
+}
+
+function gasPost(action, data) {
+  if (!GAS_URL) { toast("กรุณาตั้งค่า URL ของ Apps Script ก่อน", "error"); return Promise.reject("no url"); }
+  return fetch(GAS_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action, ...data })
+  }).then(r => r.json()).catch(err => { toast("Error: " + err, "error"); throw err; });
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function toast(msg, type) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.className = "show" + (type ? " " + type : "");
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.className = ""; }, 3000);
+}
+
+// ============================================================
+// NAV
+// ============================================================
+function showPage(name) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById("page-" + name).classList.add("active");
+  document.querySelectorAll(".nav-btn")[["score","summary","students","export"].indexOf(name)].classList.add("active");
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function init() {
+  if (GAS_URL) {
+    document.getElementById("gasUrlInput").value = GAS_URL;
+    document.getElementById("gasStatus").textContent = "✅ ตั้งค่าแล้ว";
+    document.getElementById("gasBanner").style.background = "#EAF3DE";
+  }
+
+  // Grade buttons for score page
+  const gb = document.getElementById("gradeButtons");
+  GRADES.forEach(g => {
+    const btn = document.createElement("button");
+    btn.className = "grade-btn";
+    btn.textContent = g;
+    btn.setAttribute("data-grade", g);
+    btn.onclick = () => selectGrade(g);
+    gb.appendChild(btn);
+  });
+
+  // Selects
+  ["summaryGrade","studentGrade","exportGrade"].forEach(id => {
+    const sel = document.getElementById(id);
+    GRADES.forEach(g => {
+      const opt = document.createElement("option");
+      opt.value = g; opt.textContent = g;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+// ============================================================
+// SCORE FLOW - Step 1: Grade
+// ============================================================
+function selectGrade(grade) {
+  state.grade = grade;
+  document.querySelectorAll(".grade-btn").forEach(b => {
+    b.classList.toggle("active", b.getAttribute("data-grade") === grade);
+  });
+  loadSubjectButtons();
+  document.getElementById("step-subject").style.display = "block";
+  document.getElementById("step-tasks").style.display = "none";
+  document.getElementById("step-scores").style.display = "none";
+}
+
+// ============================================================
+// SCORE FLOW - Step 2: Subject
+// ============================================================
+function loadSubjectButtons() {
+  const bc = document.getElementById("breadcrumb-subject");
+  bc.innerHTML = `<span class="breadcrumb-link" onclick="scrollToGrade()">เลือกชั้น</span><span>›</span><strong>${state.grade}</strong>`;
+
+  const grid = document.getElementById("subjectButtons");
+  grid.innerHTML = "";
+  SUBJECTS.forEach(subj => {
+    const btn = document.createElement("button");
+    btn.className = "subj-btn";
+    btn.setAttribute("data-subj", subj);
+    const dot = document.createElement("span");
+    dot.className = "subj-dot";
+    btn.appendChild(dot);
+    btn.appendChild(document.createTextNode(subj));
+    btn.onclick = () => selectSubject(subj);
+    grid.appendChild(btn);
+  });
+}
+
+function selectSubject(subject) {
+  state.subject = subject;
+  document.querySelectorAll(".subj-btn").forEach(b => {
+    b.classList.toggle("active", b.getAttribute("data-subj") === subject);
+  });
+  loadTasks();
+}
+
+// ============================================================
+// SCORE FLOW - Step 3: Tasks
+// ============================================================
+function loadTasks() {
+  document.getElementById("step-tasks").style.display = "block";
+  document.getElementById("step-scores").style.display = "none";
+  setBreadcrumb("breadcrumb-tasks");
+
+  gasCall("getTasks", { grade: state.grade, subject: state.subject })
+    .then(tasks => {
+      state.tasks = tasks || [];
+      renderTaskRows();
+    })
+    .catch(() => { state.tasks = []; renderTaskRows(); });
+}
+
+function renderTaskRows() {
+  const list = document.getElementById("taskList");
+  list.innerHTML = "";
+  if (state.tasks.length === 0) {
+    addTaskRow();
+    return;
+  }
+  state.tasks.forEach((t, i) => addTaskRowData(t.name, t.max));
+}
+
+function addTaskRow() {
+  addTaskRowData("", "10");
+}
+
+function addTaskRowData(name, max) {
+  const list = document.getElementById("taskList");
+  const row = document.createElement("div");
+  row.className = "task-row";
+  row.innerHTML = `
+    <input class="task-name" type="text" placeholder="ชื่องาน/ชิ้นงาน" value="${name || ""}">
+    <input class="task-max" type="number" placeholder="คะแนนเต็ม" value="${max || "10"}" min="1">
+    <button class="btn btn-danger btn-sm" onclick="this.closest('.task-row').remove()">ลบ</button>
+  `;
+  list.appendChild(row);
+}
+
+function collectTasks() {
+  const rows = document.querySelectorAll(".task-row");
+  const tasks = [];
+  rows.forEach(row => {
+    const name = row.querySelector(".task-name").value.trim();
+    const max = parseFloat(row.querySelector(".task-max").value) || 10;
+    if (name) tasks.push({ name, max });
+  });
+  return tasks;
+}
+
+function saveTasksAndGoScore() {
+  const tasks = collectTasks();
+  if (tasks.length === 0) { toast("กรุณาเพิ่มชิ้นงานอย่างน้อย 1 รายการ", "error"); return; }
+  state.tasks = tasks;
+
+  gasPost("saveTasks", { grade: state.grade, subject: state.subject, tasks })
+    .then(() => {
+      loadStudentsForScore();
+    })
+    .catch(() => {
+      toast("บันทึกชิ้นงานไม่สำเร็จ — กำลังโหลดนักเรียน...", "warn");
+      loadStudentsForScore();
+    });
+}
+
+// ============================================================
+// SCORE FLOW - Step 4: Scores
+// ============================================================
+function loadStudentsForScore() {
+  document.getElementById("step-scores").style.display = "block";
+  setBreadcrumb("breadcrumb-scores");
+  document.getElementById("scoreTableWrap").innerHTML = '<div style="padding:20px"><span class="spinner"></span> กำลังโหลด...</div>';
+  // ใช้ STUDENT_DB ที่ฝังไว้โดยตรง
+  const raw = STUDENT_DB[state.grade] || [];
+  state.students = raw.map(r => ({ seq: r[0], sid: r[1], name: r[2] }));
+  loadExistingScores();
+}
+
+function loadExistingScores() {
+  gasCall("getScores", { grade: state.grade, subject: state.subject })
+    .then(data => {
+      const existingMap = {};
+      if (data && data.rows) {
+        data.rows.forEach(r => {
+          const key = String(r["เลขประจำตัว"] || "") + "_" + String(r["ชื่อ-สกุล"] || "");
+          existingMap[key] = r;
+        });
+      }
+      state.scores = existingMap;
+      renderScoreTable(existingMap);
+    })
+    .catch(() => renderScoreTable({}));
+}
+
+function renderScoreTable(existingMap) {
+  const wrap = document.getElementById("scoreTableWrap");
+  document.getElementById("scoreCount").textContent = state.students.length + " คน";
+
+  if (state.students.length === 0) {
+    wrap.innerHTML = '<div class="empty"><div class="empty-icon">👥</div><p>ยังไม่มีรายชื่อนักเรียนในชั้น ' + state.grade + '<br>กรุณาเพิ่มในหน้า "รายชื่อนักเรียน" ก่อน</p></div>';
+    return;
+  }
+
+  let html = '<table class="score-table"><thead><tr><th style="width:40px">ลำดับ</th><th class="left">ชื่อ-สกุล</th>';
+  state.tasks.forEach(t => {
+    html += `<th title="คะแนนเต็ม ${t.max}">${t.name}<br><small style="font-weight:400;opacity:0.8">/${t.max}</small></th>`;
+  });
+  html += '<th>รวม</th></tr></thead><tbody>';
+
+  state.students.forEach((s, idx) => {
+    const key = String(s.sid || "") + "_" + String(s.name || "");
+    const existing = existingMap[key] || {};
+    html += `<tr><td class="center">${s.seq}</td><td>${s.name}</td>`;
+    state.tasks.forEach(t => {
+      const val = existing[t.name] !== undefined && existing[t.name] !== "" ? existing[t.name] : "";
+      html += `<td class="center"><input class="score-input" type="number" min="0" max="${t.max}" step="0.5" value="${val}" data-sid="${s.sid}" data-name="${s.name}" data-task="${t.name}" onchange="updateRowTotal(this)"></td>`;
+    });
+    html += `<td class="center score-total" id="total_${idx}">-</td>`;
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+
+  // Calculate initial totals
+  state.students.forEach((s, idx) => {
+    const inputs = wrap.querySelectorAll(`input[data-name="${s.name}"]`);
+    updateTotalByIndex(idx, inputs);
+  });
+}
+
+function updateRowTotal(input) {
+  const name = input.getAttribute("data-name");
+  const idx = state.students.findIndex(s => s.name === name);
+  if (idx < 0) return;
+  const inputs = document.querySelectorAll(`#scoreTableWrap input[data-name="${name}"]`);
+  updateTotalByIndex(idx, inputs);
+}
+
+function updateTotalByIndex(idx, inputs) {
+  const maxTotal = state.tasks.reduce((s, t) => s + (t.max || 0), 0);
+  let total = 0;
+  inputs.forEach(inp => { total += parseFloat(inp.value) || 0; });
+  const el = document.getElementById("total_" + idx);
+  if (el) {
+    el.textContent = total > 0 ? total + "/" + maxTotal : "-";
+    el.style.color = total >= maxTotal * 0.8 ? "var(--teal-600)" : total >= maxTotal * 0.5 ? "var(--amber-400)" : total > 0 ? "var(--red-600)" : "var(--text-hint)";
+  }
+}
+
+function saveAllScores() {
+  const inputs = document.querySelectorAll("#scoreTableWrap input.score-input");
+  const scoreMap = {};
+  inputs.forEach(inp => {
+    const name = inp.getAttribute("data-name");
+    const task = inp.getAttribute("data-task");
+    const sid = inp.getAttribute("data-sid");
+    if (!scoreMap[name]) scoreMap[name] = { sid, name, scores: {} };
+    scoreMap[name].scores[task] = inp.value !== "" ? parseFloat(inp.value) : "";
+  });
+
+  const scoreRows = state.students.map(s => ({
+    seq: s.seq,
+    sid: s.sid,
+    name: s.name,
+    scores: (scoreMap[s.name] || {}).scores || {}
+  }));
+
+  gasPost("saveAllScores", { grade: state.grade, subject: state.subject, tasks: state.tasks, scoreRows })
+    .then(res => {
+      if (res && res.ok) toast(`บันทึกคะแนน ${res.count} คน สำเร็จ! ✅`, "success");
+      else toast("บันทึกไม่สำเร็จ", "error");
+    })
+    .catch(() => toast("เชื่อมต่อ Apps Script ไม่ได้", "error"));
+}
+
+function backToTasks() {
+  document.getElementById("step-scores").style.display = "none";
+  document.getElementById("step-tasks").style.display = "block";
+}
+
+// ============================================================
+// BREADCRUMB HELPER
+// ============================================================
+function setBreadcrumb(id) {
+  const el = document.getElementById(id);
+  el.innerHTML = `
+    <span class="breadcrumb-link" onclick="resetToGrade()">เลือกชั้น</span>
+    <span>›</span>
+    <span class="breadcrumb-link" onclick="selectGrade('${state.grade}')">${state.grade}</span>
+    <span>›</span>
+    <strong>${state.subject}</strong>
+  `;
+}
+
+function resetToGrade() {
+  document.getElementById("step-subject").style.display = "none";
+  document.getElementById("step-tasks").style.display = "none";
+  document.getElementById("step-scores").style.display = "none";
+}
+
+function scrollToGrade() {
+  document.getElementById("step-grade").scrollIntoView({ behavior: "smooth" });
+}
+
+// ============================================================
+// SUMMARY
+// ============================================================
+function loadSummary() {
+  const grade = document.getElementById("summaryGrade").value;
+  if (!grade) return;
+  const content = document.getElementById("summaryContent");
+  content.innerHTML = '<div style="padding:20px"><span class="spinner"></span> กำลังโหลด...</div>';
+
+  gasCall("getSummary", { grade })
+    .then(summary => {
+      if (!summary || summary.length === 0) {
+        content.innerHTML = '<div class="empty"><div class="empty-icon">📊</div><p>ยังไม่มีข้อมูลคะแนนสำหรับ ' + grade + '</p></div>';
+        return;
+      }
+      let html = '<div class="summary-grid">';
+      summary.forEach(s => {
+        const pct = s.max > 0 ? Math.round((s.avg / s.max) * 100) : 0;
+        const colorClass = pct >= 80 ? "badge-success" : pct >= 50 ? "badge-warn" : "badge-gray";
+        html += `<div class="summary-card ${s.hasData ? "" : "no-data"}">
+          <div class="summary-card-subj" title="${s.subject}">${s.subject}</div>
+          <div class="summary-card-avg">${s.hasData ? s.avg.toFixed(1) : "ยังไม่มีข้อมูล"}</div>
+          <div class="summary-card-detail">${s.hasData ? `${s.count} คน &nbsp;|&nbsp; เต็ม ${s.max} &nbsp;|&nbsp; ${pct}%` : ""}</div>
+          ${s.hasData ? `<div class="pct-bar"><div class="pct-fill" style="width:${pct}%"></div></div>` : ""}
+        </div>`;
+      });
+      html += "</div>";
+      content.innerHTML = html;
+    })
+    .catch(() => { content.innerHTML = '<div class="empty"><p>โหลดข้อมูลไม่ได้</p></div>'; });
+}
+
+// ============================================================
+// STUDENTS
+// ============================================================
+function loadStudents() {
+  const grade = document.getElementById("studentGrade").value;
+  if (!grade) return;
+  // โหลดจาก STUDENT_DB ก่อน (ฝังข้อมูลจาก Excel 2569)
+  const raw = STUDENT_DB[grade] || [];
+  const students = raw.map(r => ({ seq: r[0], sid: r[1], name: r[2] }));
+  state.students = students;
+  renderStudentTable(grade, students);
+}
+
+function renderStudentTable(grade, students) {
+  const wrap = document.getElementById("studentTableWrap");
+  let html = `<table class="student-table"><thead><tr>
+    <th style="width:60px">ลำดับ</th>
+    <th style="width:130px">เลขประจำตัว</th>
+    <th>ชื่อ-สกุล</th>
+    <th style="width:60px" class="no-print"></th>
+  </tr></thead><tbody id="studentBody">`;
+
+  (students || []).forEach((s, i) => {
+    html += studentRow(i + 1, s.sid, s.name);
+  });
+
+  html += '</tbody></table>';
+  html += `<div class="flex gap-8 mt-12 no-print"><button class="btn btn-ghost btn-sm" onclick="addStudentRow()">+ เพิ่มนักเรียน</button></div>`;
+  wrap.innerHTML = html;
+}
+
+function studentRow(seq, sid, name) {
+  return `<tr>
+    <td><input type="number" value="${seq}" style="width:50px;text-align:center;border:var(--border);border-radius:var(--radius-md);padding:4px"></td>
+    <td><input type="text" value="${sid || ""}" placeholder="เลขประจำตัว"></td>
+    <td><input type="text" value="${name || ""}" placeholder="ชื่อ-สกุล"></td>
+    <td class="no-print"><button class="btn btn-danger btn-sm" onclick="this.closest('tr').remove()">ลบ</button></td>
+  </tr>`;
+}
+
+function addStudentRow() {
+  const body = document.getElementById("studentBody");
+  if (!body) { toast("กรุณาเลือกชั้นเรียนก่อน", "error"); return; }
+  const rows = body.querySelectorAll("tr");
+  const seq = rows.length + 1;
+  body.insertAdjacentHTML("beforeend", studentRow(seq, "", ""));
+}
+
+function saveStudents() {
+  const grade = document.getElementById("studentGrade").value;
+  if (!grade) { toast("กรุณาเลือกชั้นเรียน", "error"); return; }
+  const rows = document.querySelectorAll("#studentBody tr");
+  const students = [];
+  rows.forEach(row => {
+    const inputs = row.querySelectorAll("input");
+    const seq = inputs[0].value;
+    const sid = inputs[1].value.trim();
+    const name = inputs[2].value.trim();
+    if (name) students.push({ seq, sid, name });
+  });
+
+  gasPost("saveStudents", { grade, students })
+    .then(res => {
+      if (res && res.ok) toast(`บันทึกรายชื่อ ${students.length} คน สำเร็จ! ✅`, "success");
+      else toast("บันทึกไม่สำเร็จ", "error");
+    })
+    .catch(() => toast("เชื่อมต่อ Apps Script ไม่ได้", "error"));
+}
+
+// ============================================================
+// EXPORT / PRINT
+// ============================================================
+function loadExportSubjects() {
+  const grade = document.getElementById("exportGrade").value;
+  const sel = document.getElementById("exportSubject");
+  sel.innerHTML = '<option value="">-- เลือกวิชา --</option>';
+  if (!grade) return;
+  SUBJECTS.forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s; opt.textContent = s;
+    sel.appendChild(opt);
+  });
+}
+
+function loadExportData() {
+  const grade = document.getElementById("exportGrade").value;
+  const subject = document.getElementById("exportSubject").value;
+  if (!grade || !subject) { toast("กรุณาเลือกชั้นและวิชา", "error"); return; }
+
+  const content = document.getElementById("exportContent");
+  content.innerHTML = '<div style="padding:20px"><span class="spinner"></span> กำลังโหลด...</div>';
+
+  Promise.all([
+    gasCall("getScores", { grade, subject }),
+    gasCall("getTasks", { grade, subject })
+  ]).then(([data, tasks]) => {
+    if (!data || !data.rows || data.rows.length === 0) {
+      content.innerHTML = '<div class="empty"><p>ยังไม่มีข้อมูลคะแนนสำหรับ ' + grade + ' วิชา' + subject + '</p></div>';
+      return;
+    }
+    const maxTotal = tasks.reduce((s, t) => s + (t.max || 0), 0);
+    let html = `<div style="text-align:center;margin-bottom:16px">
+      <h2 style="font-size:18px;font-weight:600">รายงานคะแนนเก็บ</h2>
+      <p style="color:var(--text-secondary)">ชั้น ${grade} &nbsp;|&nbsp; วิชา${subject} &nbsp;|&nbsp; โรงเรียนบ้านป่าฝาง</p>
+    </div>`;
+
+    html += '<table class="score-table" style="font-size:13px"><thead><tr><th style="width:40px">ลำดับ</th><th class="left">ชื่อ-สกุล</th>';
+    tasks.forEach(t => { html += `<th>${t.name}<br><small>/${t.max}</small></th>`; });
+    html += `<th>รวม/${maxTotal}</th><th>%</th></tr></thead><tbody>`;
+
+    data.rows.forEach((row, i) => {
+      const total = Number(row["รวม"]) || 0;
+      const pct = maxTotal > 0 ? Math.round((total / maxTotal) * 100) : 0;
+      html += `<tr><td class="center">${row["ลำดับ"] || i + 1}</td><td>${row["ชื่อ-สกุล"] || ""}</td>`;
+      tasks.forEach(t => { html += `<td class="center">${row[t.name] !== undefined ? row[t.name] : "-"}</td>`; });
+      html += `<td class="center score-total">${total}</td><td class="center">${pct}%</td></tr>`;
+    });
+
+    const allTotals = data.rows.map(r => Number(r["รวม"]) || 0);
+    const avg = allTotals.length ? (allTotals.reduce((a,b) => a+b, 0) / allTotals.length).toFixed(1) : 0;
+    html += `<tr style="background:var(--blue-50);font-weight:600">
+      <td colspan="2" class="left" style="padding-left:12px">ค่าเฉลี่ย</td>
+      ${tasks.map(() => "<td></td>").join("")}
+      <td class="center">${avg}</td>
+      <td class="center">${maxTotal > 0 ? Math.round((avg / maxTotal) * 100) : 0}%</td>
+    </tr>`;
+
+    html += '</tbody></table>';
+    content.innerHTML = html;
+  }).catch(() => { content.innerHTML = '<div class="empty"><p>โหลดข้อมูลไม่ได้</p></div>'; });
+}
+
+// ============================================================
+// HANDLE GAS POST REQUESTS (in Code.gs doPost)
+// ============================================================
+// NOTE: The GAS Code.gs needs doPost function — add this to Code.gs:
+// function doPost(e) {
+//   const data = JSON.parse(e.postData.contents);
+//   const action = data.action;
+//   if (action === "saveTasks") return createJsonResponse(saveTasks(data.grade, data.subject, data.tasks));
+//   if (action === "saveStudents") return createJsonResponse(saveStudents(data.grade, data.students));
+//   if (action === "saveAllScores") return createJsonResponse(saveAllScores(data.grade, data.subject, data.tasks, data.scoreRows));
+//   return createJsonResponse({ ok: false, msg: "Unknown action" });
+// }
+
+// ============================================================
+// START
+// ============================================================
+init();
+</script>
+</body>
+</html>
