@@ -616,12 +616,39 @@ function saveAllScores() {
   }));
 
   toast("กำลังบันทึก...", "");
-  gasPost("saveAllScores", { grade: state.grade, subject: state.subject, tasks: state.tasks, scoreRows })
-    .then(res => {
-      if (res && res.ok) toast(`✅ บันทึกคะแนน ${res.count} คน สำเร็จ!`, "success");
-      else toast("บันทึกไม่สำเร็จ — ลองใหม่", "error");
-    })
-    .catch(() => toast("บันทึกไม่สำเร็จ — ตรวจสอบการเชื่อมต่อ", "error"));
+
+  // แบ่งส่งทีละ 5 คน เพื่อไม่ให้ URL ยาวเกิน GAS limit
+  const BATCH = 5;
+  const batches = [];
+  for (let i = 0; i < scoreRows.length; i += BATCH) {
+    batches.push(scoreRows.slice(i, i + BATCH));
+  }
+
+  let done = 0;
+  let totalCount = 0;
+  let hasError = false;
+
+  function sendBatch(idx) {
+    if (idx >= batches.length) {
+      if (hasError) toast("บันทึกบางส่วนไม่สำเร็จ — ลองใหม่", "error");
+      else toast("✅ บันทึกคะแนน " + totalCount + " คน สำเร็จ!", "success");
+      return;
+    }
+    const isFirst = idx === 0;
+    gasCall("saveAllScores", {
+      grade: state.grade,
+      subject: state.subject,
+      tasks: JSON.stringify(state.tasks),
+      scoreRows: JSON.stringify(batches[idx]),
+      append: isFirst ? "0" : "1"
+    }).then(res => {
+      if (res && res.ok) { totalCount += res.count; }
+      else hasError = true;
+      sendBatch(idx + 1);
+    }).catch(() => { hasError = true; sendBatch(idx + 1); });
+  }
+
+  sendBatch(0);
 }
 
 function backToTasks() {
