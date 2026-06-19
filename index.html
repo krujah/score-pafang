@@ -316,23 +316,39 @@ function saveGasUrl() {
   toast("บันทึก URL สำเร็จ", "success");
 }
 
+let _jsonpCount = 0;
 function gasCall(action, params) {
   if (!GAS_URL) { toast("กรุณาตั้งค่า URL ของ Apps Script ก่อน", "error"); return Promise.reject("no url"); }
-  const url = new URL(GAS_URL);
-  url.searchParams.set("action", action);
-  Object.entries(params || {}).forEach(([k,v]) => url.searchParams.set(k, typeof v === "object" ? JSON.stringify(v) : v));
-  return fetch(url.toString())
-    .then(r => r.json())
-    .catch(err => { toast("เชื่อมต่อ Apps Script ไม่ได้: " + err, "error"); throw err; });
+  return new Promise(function(resolve, reject) {
+    const cbName = "_gcb" + (++_jsonpCount);
+    const url = new URL(GAS_URL);
+    url.searchParams.set("action", action);
+    url.searchParams.set("callback", cbName);
+    Object.entries(params || {}).forEach(([k,v]) => url.searchParams.set(k, typeof v === "object" ? JSON.stringify(v) : v));
+    const timeout = setTimeout(function(){
+      delete window[cbName];
+      if(s.parentNode) s.parentNode.removeChild(s);
+      toast("Apps Script ไม่ตอบสนอง — ตรวจสอบ URL", "error");
+      reject("timeout");
+    }, 15000);
+    window[cbName] = function(data) {
+      clearTimeout(timeout);
+      delete window[cbName];
+      if(s.parentNode) s.parentNode.removeChild(s);
+      resolve(data);
+    };
+    const s = document.createElement("script");
+    s.src = url.toString();
+    s.onerror = function(){ clearTimeout(timeout); delete window[cbName]; toast("เชื่อมต่อ Apps Script ไม่ได้", "error"); reject("error"); };
+    document.head.appendChild(s);
+  });
 }
 
 function gasPost(action, data) {
-  if (!GAS_URL) { toast("กรุณาตั้งค่า URL ของ Apps Script ก่อน", "error"); return Promise.reject("no url"); }
-  return fetch(GAS_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action, ...data })
-  }).then(r => r.json()).catch(err => { toast("Error: " + err, "error"); throw err; });
+  // ส่งผ่าน JSONP GET (GAS ไม่รองรับ CORS POST จาก external domain)
+  const params = {};
+  Object.entries(data || {}).forEach(([k,v]) => { params[k] = typeof v === "object" ? JSON.stringify(v) : v; });
+  return gasCall(action, params);
 }
 
 // ============================================================
