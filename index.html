@@ -317,8 +317,8 @@ function saveGasUrl() {
 }
 
 let _jsonpCount = 0;
-function gasCall(action, params) {
-  if (!GAS_URL) { toast("กรุณาตั้งค่า URL ของ Apps Script ก่อน", "error"); return Promise.reject("no url"); }
+function gasCall(action, params, silent) {
+  if (!GAS_URL) { if(!silent) toast("กรุณาตั้งค่า URL ของ Apps Script ก่อน", "error"); return Promise.reject("no url"); }
   return new Promise(function(resolve, reject) {
     const cbName = "_gcb" + (++_jsonpCount);
     const url = new URL(GAS_URL);
@@ -328,7 +328,7 @@ function gasCall(action, params) {
     const timeout = setTimeout(function(){
       delete window[cbName];
       if(s.parentNode) s.parentNode.removeChild(s);
-      toast("Apps Script ไม่ตอบสนอง — ตรวจสอบ URL", "error");
+      if(!silent) toast("Apps Script ไม่ตอบสนอง", "error");
       reject("timeout");
     }, 15000);
     window[cbName] = function(data) {
@@ -339,16 +339,15 @@ function gasCall(action, params) {
     };
     const s = document.createElement("script");
     s.src = url.toString();
-    s.onerror = function(){ clearTimeout(timeout); delete window[cbName]; toast("เชื่อมต่อ Apps Script ไม่ได้", "error"); reject("error"); };
+    s.onerror = function(){ clearTimeout(timeout); delete window[cbName]; if(!silent) toast("เชื่อมต่อ Apps Script ไม่ได้", "error"); reject("error"); };
     document.head.appendChild(s);
   });
 }
 
-function gasPost(action, data) {
-  // ส่งผ่าน JSONP GET (GAS ไม่รองรับ CORS POST จาก external domain)
+function gasPost(action, data, silent) {
   const params = {};
   Object.entries(data || {}).forEach(([k,v]) => { params[k] = typeof v === "object" ? JSON.stringify(v) : v; });
-  return gasCall(action, params);
+  return gasCall(action, params, silent);
 }
 
 // ============================================================
@@ -506,14 +505,11 @@ function saveTasksAndGoScore() {
   if (tasks.length === 0) { toast("กรุณาเพิ่มชิ้นงานอย่างน้อย 1 รายการ", "error"); return; }
   state.tasks = tasks;
 
-  gasPost("saveTasks", { grade: state.grade, subject: state.subject, tasks })
-    .then(() => {
-      loadStudentsForScore();
-    })
-    .catch(() => {
-      toast("บันทึกชิ้นงานไม่สำเร็จ — กำลังโหลดนักเรียน...", "warn");
-      loadStudentsForScore();
-    });
+  // บันทึกชิ้นงานและโหลดนักเรียนพร้อมกัน ไม่แสดง error ถ้ายังเชื่อมต่อได้
+  loadStudentsForScore();
+  gasPost("saveTasks", { grade: state.grade, subject: state.subject, tasks }, true)
+    .then(() => { toast("บันทึกชิ้นงานสำเร็จ ✅", "success"); })
+    .catch(() => { /* ข้ามถ้า save tasks ไม่สำเร็จ — ข้อมูลชิ้นงานอยู่ใน state แล้ว */ });
 }
 
 // ============================================================
@@ -619,12 +615,13 @@ function saveAllScores() {
     scores: (scoreMap[s.name] || {}).scores || {}
   }));
 
+  toast("กำลังบันทึก...", "");
   gasPost("saveAllScores", { grade: state.grade, subject: state.subject, tasks: state.tasks, scoreRows })
     .then(res => {
-      if (res && res.ok) toast(`บันทึกคะแนน ${res.count} คน สำเร็จ! ✅`, "success");
-      else toast("บันทึกไม่สำเร็จ", "error");
+      if (res && res.ok) toast(`✅ บันทึกคะแนน ${res.count} คน สำเร็จ!`, "success");
+      else toast("บันทึกไม่สำเร็จ — ลองใหม่", "error");
     })
-    .catch(() => toast("เชื่อมต่อ Apps Script ไม่ได้", "error"));
+    .catch(() => toast("บันทึกไม่สำเร็จ — ตรวจสอบการเชื่อมต่อ", "error"));
 }
 
 function backToTasks() {
