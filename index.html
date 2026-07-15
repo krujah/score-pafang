@@ -631,10 +631,11 @@ function saveSingleTask() {
   const t = state.currentTask;
   if (!t) return;
   const inputs = document.querySelectorAll("#scoreTableWrap input.score-input");
-  const rows = state.students.map(s => {
+  // ส่งแค่ seq+คะแนน เพื่อให้ URL สั้น ไม่เกิน GAS limit
+  const scores = state.students.map(s => {
     const inp = Array.from(inputs).find(i => i.getAttribute("data-name") === s.name);
     const val = inp && inp.value !== "" ? parseFloat(inp.value) : "";
-    return [s.seq, s.sid, s.name, val];
+    return [s.seq, val];
   });
   const saveBtn = document.getElementById("saveSingleBtn");
   if (saveBtn) saveBtn.disabled = true;
@@ -642,14 +643,15 @@ function saveSingleTask() {
   gasCall("saveTaskScore", {
     grade: state.grade, subject: state.subject,
     task: t.name, taskMax: t.max,
-    rows: JSON.stringify(rows)
+    scores: JSON.stringify(scores)
   }).then(res => {
     if (saveBtn) saveBtn.disabled = false;
-    if (res && res.ok) toast("\u2705 บันทึก " + t.name + " (" + res.count + " คน) สำเร็จ!", "success");
-    else toast("\u26a0\ufe0f บันทึกไม่สำเร็จ", "error");
-  }).catch(() => { if (saveBtn) saveBtn.disabled = false; toast("\u26a0\ufe0f เชื่อมต่อไม่ได้", "error"); });
+    if (res && res.ok) toast("✅ บันทึก " + t.name + " (" + res.count + " คน) สำเร็จ!", "success");
+    else toast("⚠️ " + (res.msg || "บันทึกไม่สำเร็จ"), "error");
+  }).catch(() => { if (saveBtn) saveBtn.disabled = false; toast("⚠️ เชื่อมต่อไม่ได้", "error"); });
 }
 function saveAllScores() { saveSingleTask(); }
+
 
 
 function backToTasks() {
