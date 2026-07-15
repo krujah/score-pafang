@@ -653,37 +653,36 @@ function saveAllScores() {
     scores: (scoreMap[s.name] || {}).scores || {}
   }));
 
-  toast("กำลังบันทึก...", "");
-
-  // แบ่งส่งทีละ 5 คน เพื่อไม่ให้ URL ยาวเกิน GAS limit
-  const BATCH = 5;
+  // แบ่งทีละ 3 คน + รอ 1 วินาทีระหว่าง batch ป้องกันข้อมูลหาย
+  const BATCH = 3;
+  const DELAY = 1000;
   const batches = [];
-  for (let i = 0; i < scoreRows.length; i += BATCH) {
-    batches.push(scoreRows.slice(i, i + BATCH));
-  }
+  for (let i = 0; i < scoreRows.length; i += BATCH) batches.push(scoreRows.slice(i, i + BATCH));
 
-  let done = 0;
   let totalCount = 0;
-  let hasError = false;
+  let failedCount = 0;
+  const saveBtn = document.querySelector("[onclick='saveAllScores()']");
+  if (saveBtn) saveBtn.disabled = true;
+
+  toast("กำลังบันทึก... 0/" + scoreRows.length + " คน", "");
 
   function sendBatch(idx) {
     if (idx >= batches.length) {
-      if (hasError) toast("บันทึกบางส่วนไม่สำเร็จ — ลองใหม่", "error");
-      else toast("✅ บันทึกคะแนน " + totalCount + " คน สำเร็จ!", "success");
+      if (saveBtn) saveBtn.disabled = false;
+      if (failedCount === 0) toast("✅ บันทึกครบ " + totalCount + " คน สำเร็จ!", "success");
+      else toast("⚠️ บันทึกได้ " + totalCount + "/" + scoreRows.length + " คน — กดบันทึกอีกครั้ง", "error");
       return;
     }
-    const isFirst = idx === 0;
+    toast("กำลังบันทึก... " + Math.min(idx * BATCH + BATCH, scoreRows.length) + "/" + scoreRows.length + " คน", "");
     gasCall("saveAllScores", {
-      grade: state.grade,
-      subject: state.subject,
+      grade: state.grade, subject: state.subject,
       tasks: JSON.stringify(state.tasks),
       scoreRows: JSON.stringify(batches[idx]),
-      append: isFirst ? "0" : "1"
+      append: idx === 0 ? "0" : "1"
     }).then(res => {
-      if (res && res.ok) { totalCount += res.count; }
-      else hasError = true;
-      sendBatch(idx + 1);
-    }).catch(() => { hasError = true; sendBatch(idx + 1); });
+      if (res && res.ok) totalCount += res.count; else failedCount += batches[idx].length;
+      setTimeout(() => sendBatch(idx + 1), DELAY);
+    }).catch(() => { failedCount += batches[idx].length; setTimeout(() => sendBatch(idx + 1), DELAY); });
   }
 
   sendBatch(0);
@@ -898,7 +897,7 @@ function loadExportData() {
 // ============================================================
 // AUTH — แก้ username และ password ตรงนี้
 // ============================================================
-const AUTH_USER = "krupafang";
+const AUTH_USER = "krujah";
 const AUTH_PASS = "pafang2569";
 
 function checkAuth() {
