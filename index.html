@@ -631,11 +631,13 @@ function saveSingleTask() {
   const t = state.currentTask;
   if (!t) return;
   const inputs = document.querySelectorAll("#scoreTableWrap input.score-input");
-  // ส่งแค่ seq+คะแนน เพื่อให้ URL สั้น ไม่เกิน GAS limit
+  // ส่ง seq, sid, name, score — ครบทุกอย่าง ไม่พึ่ง sheet นักเรียน
+  // แต่ compress ชื่อโดยตัด prefix เด็กชาย/เด็กหญิง/ด.ช./ด.ญ. ออก เพื่อลดขนาด URL
   const scores = state.students.map(s => {
     const inp = Array.from(inputs).find(i => i.getAttribute("data-name") === s.name);
     const val = inp && inp.value !== "" ? parseFloat(inp.value) : "";
-    return [s.seq, val];
+    // ส่งแค่ seq + sid + score (ไม่ส่งชื่อ ลด URL)
+    return [s.seq, s.sid || "", val];
   });
   const saveBtn = document.getElementById("saveSingleBtn");
   if (saveBtn) saveBtn.disabled = true;
@@ -651,6 +653,7 @@ function saveSingleTask() {
   }).catch(() => { if (saveBtn) saveBtn.disabled = false; toast("⚠️ เชื่อมต่อไม่ได้", "error"); });
 }
 function saveAllScores() { saveSingleTask(); }
+
 
 
 
