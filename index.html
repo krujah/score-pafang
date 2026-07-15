@@ -636,56 +636,46 @@ function updateTotalByIndex(idx, inputs) {
 }
 
 function saveAllScores() {
+  // รวบรวมคะแนนจาก input ทั้งหมด
   const inputs = document.querySelectorAll("#scoreTableWrap input.score-input");
   const scoreMap = {};
   inputs.forEach(inp => {
     const name = inp.getAttribute("data-name");
     const task = inp.getAttribute("data-task");
-    const sid = inp.getAttribute("data-sid");
-    if (!scoreMap[name]) scoreMap[name] = { sid, name, scores: {} };
-    scoreMap[name].scores[task] = inp.value !== "" ? parseFloat(inp.value) : "";
+    if (!scoreMap[name]) scoreMap[name] = {};
+    scoreMap[name][task] = inp.value !== "" ? parseFloat(inp.value) : "";
   });
 
-  const scoreRows = state.students.map(s => ({
-    seq: s.seq,
-    sid: s.sid,
-    name: s.name,
-    scores: (scoreMap[s.name] || {}).scores || {}
-  }));
+  // สร้าง rows แบบบีบอัด: [seq, sid, name, v1, v2, ...] เป็น array ไม่มี key
+  // เพื่อลดขนาด payload ให้สั้นที่สุด
+  const taskNames = state.tasks.map(t => t.name);
+  const taskMaxs = state.tasks.map(t => t.max);
+  const rows = state.students.map(s => {
+    const sc = scoreMap[s.name] || {};
+    const vals = taskNames.map(t => sc[t] !== undefined && sc[t] !== "" ? sc[t] : "");
+    return [s.seq, s.sid, s.name].concat(vals);
+  });
 
-  // แบ่งทีละ 3 คน + รอ 1 วินาทีระหว่าง batch ป้องกันข้อมูลหาย
-  const BATCH = 3;
-  const DELAY = 1000;
-  const batches = [];
-  for (let i = 0; i < scoreRows.length; i += BATCH) batches.push(scoreRows.slice(i, i + BATCH));
-
-  let totalCount = 0;
-  let failedCount = 0;
   const saveBtn = document.querySelector("[onclick='saveAllScores()']");
   if (saveBtn) saveBtn.disabled = true;
+  toast("กำลังบันทึก...", "");
 
-  toast("กำลังบันทึก... 0/" + scoreRows.length + " คน", "");
-
-  function sendBatch(idx) {
-    if (idx >= batches.length) {
-      if (saveBtn) saveBtn.disabled = false;
-      if (failedCount === 0) toast("✅ บันทึกครบ " + totalCount + " คน สำเร็จ!", "success");
-      else toast("⚠️ บันทึกได้ " + totalCount + "/" + scoreRows.length + " คน — กดบันทึกอีกครั้ง", "error");
-      return;
-    }
-    toast("กำลังบันทึก... " + Math.min(idx * BATCH + BATCH, scoreRows.length) + "/" + scoreRows.length + " คน", "");
-    gasCall("saveAllScores", {
-      grade: state.grade, subject: state.subject,
-      tasks: JSON.stringify(state.tasks),
-      scoreRows: JSON.stringify(batches[idx]),
-      append: idx === 0 ? "0" : "1"
-    }).then(res => {
-      if (res && res.ok) totalCount += res.count; else failedCount += batches[idx].length;
-      setTimeout(() => sendBatch(idx + 1), DELAY);
-    }).catch(() => { failedCount += batches[idx].length; setTimeout(() => sendBatch(idx + 1), DELAY); });
-  }
-
-  sendBatch(0);
+  // ส่งทุก row พร้อมกันครั้งเดียว แต่ส่งแค่ข้อมูลที่จำเป็น
+  // grade, subject, taskNames, taskMaxs, rows (compact)
+  gasCall("saveCompact", {
+    grade: state.grade,
+    subject: state.subject,
+    tn: JSON.stringify(taskNames),
+    tm: JSON.stringify(taskMaxs),
+    rows: JSON.stringify(rows)
+  }).then(res => {
+    if (saveBtn) saveBtn.disabled = false;
+    if (res && res.ok) toast("✅ บันทึกครบ " + res.count + " คน สำเร็จ!", "success");
+    else toast("⚠️ บันทึกไม่สำเร็จ: " + (res && res.msg || "ลองใหม่"), "error");
+  }).catch(() => {
+    if (saveBtn) saveBtn.disabled = false;
+    toast("⚠️ เชื่อมต่อไม่ได้ — ลองกดบันทึกใหม่", "error");
+  });
 }
 
 function backToTasks() {
